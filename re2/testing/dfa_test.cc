@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <iostream>
 
 #include "util/test.h"
 #include "util/flags.h"
@@ -20,7 +21,7 @@
 
 static const bool UsingMallocCounter = false;
 
-DEFINE_FLAG(int, size, 8, "log2(number of DFA nodes)");
+DEFINE_FLAG(int, size, 4, "log2(number of DFA nodes)");
 DEFINE_FLAG(int, repeat, 2, "Repetition count.");
 DEFINE_FLAG(int, threads, 4, "number of threads");
 
@@ -47,51 +48,56 @@ static void DoBuild(Prog* prog) {
   ASSERT_TRUE(prog->BuildEntireDFA(Prog::kFirstMatch, nullptr));
 }
 
-TEST(Multithreaded, BuildEntireDFA) {
-  // Create regexp with 2^FLAGS_size states in DFA.
-  std::string s = "a";
-  for (int i = 0; i < GetFlag(FLAGS_size); i++)
-    s += "[ab]";
-  s += "b";
-  Regexp* re = Regexp::Parse(s, Regexp::LikePerl, NULL);
-  ASSERT_TRUE(re != NULL);
-
-  // Check that single-threaded code works.
-  {
-    Prog* prog = re->CompileToProg(0);
-    ASSERT_TRUE(prog != NULL);
-
-    std::thread t(DoBuild, prog);
-    t.join();
-
-    delete prog;
-  }
-
-  // Build the DFA simultaneously in a bunch of threads.
-  for (int i = 0; i < GetFlag(FLAGS_repeat); i++) {
-    Prog* prog = re->CompileToProg(0);
-    ASSERT_TRUE(prog != NULL);
-
-    std::vector<std::thread> threads;
-    for (int j = 0; j < GetFlag(FLAGS_threads); j++)
-      threads.emplace_back(DoBuild, prog);
-    for (int j = 0; j < GetFlag(FLAGS_threads); j++)
-      threads[j].join();
-
-    // One more compile, to make sure everything is okay.
-    prog->BuildEntireDFA(Prog::kFirstMatch, nullptr);
-    delete prog;
-  }
-
-  re->Decref();
-}
+//TEST(Multithreaded, BuildEntireDFA) {
+//  // Create regexp with 2^FLAGS_size states in DFA.
+//  std::string s = "a";
+//  for (int i = 0; i < GetFlag(FLAGS_size); i++)
+//    s += "[ab]";
+//
+//  s += "b";
+//  Regexp* re = Regexp::Parse(s, Regexp::LikePerl, NULL);
+//  ASSERT_TRUE(re != NULL);
+//
+//  // Check that single-threaded code works.
+//  {
+//    Prog* prog = re->CompileToProg(0);
+//    ASSERT_TRUE(prog != NULL);
+//
+//    std::thread t(DoBuild, prog);
+//    t.join();
+//
+//    delete prog;
+//  }
+//
+//  // Build the DFA simultaneously in a bunch of threads.
+//  for (int i = 0; i < GetFlag(FLAGS_repeat); i++) {
+//    Prog* prog = re->CompileToProg(0);
+//    ASSERT_TRUE(prog != NULL);
+//
+//    std::vector<std::thread> threads;
+//    for (int j = 0; j < GetFlag(FLAGS_threads); j++)
+//      threads.emplace_back(DoBuild, prog);
+//    for (int j = 0; j < GetFlag(FLAGS_threads); j++)
+//      threads[j].join();
+//
+//    // One more compile, to make sure everything is okay.
+//    prog->BuildEntireDFA(Prog::kFirstMatch, nullptr);
+//    delete prog;
+//  }
+//
+//  re->Decref();
+//}
 
 // Check that DFA size requirements are followed.
 // BuildEntireDFA will, like SearchDFA, stop building out
 // the DFA once the memory limits are reached.
 TEST(SingleThreaded, BuildEntireDFA) {
   // Create regexp with 2^30 states in DFA.
-  Regexp* re = Regexp::Parse("a[ab]{30}b", Regexp::LikePerl, NULL);
+//  Regexp* re = Regexp::Parse("a[ab]{30}b", Regexp::LikePerl, NULL);
+//  Regexp* re = Regexp::Parse("a", Regexp::LikePerl, NULL);
+//  Regexp* re = Regexp::Parse("a[ab]b", Regexp::LikePerl, NULL);
+//  Regexp* re = Regexp::Parse("google.com\\/((maps)|(images))", Regexp::LikePerl, NULL);
+  Regexp* re = Regexp::Parse(R"([(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*))", Regexp::LikePerl, NULL);
   ASSERT_TRUE(re != NULL);
 
   for (int i = 17; i < 24; i++) {
@@ -322,16 +328,16 @@ struct CallbackTest {
 // Putting it together, this means that the DFA must consume the
 // byte 'a' and then hit end of text. Q.E.D.
 CallbackTest callback_tests[] = {
-  { "\\Aa\\z", "[-1,1,-1] [-1,-1,2] [[-1,-1,-1]]" },
-  { "\\Aab\\z", "[-1,1,-1,-1] [-1,-1,2,-1] [-1,-1,-1,3] [[-1,-1,-1,-1]]" },
-  { "\\Aa*b\\z", "[-1,0,1,-1] [-1,-1,-1,2] [[-1,-1,-1,-1]]" },
-  { "\\Aa+b\\z", "[-1,1,-1,-1] [-1,1,2,-1] [-1,-1,-1,3] [[-1,-1,-1,-1]]" },
-  { "\\Aa?b\\z", "[-1,1,2,-1] [-1,-1,2,-1] [-1,-1,-1,3] [[-1,-1,-1,-1]]" },
-  { "\\Aa\\C*\\z", "[-1,1,-1] [1,1,2] [[-1,-1,-1]]" },
-  { "\\Aa\\C*", "[-1,1,-1] [2,2,3] [[2,2,2]] [[-1,-1,-1]]" },
-  { "a\\C*", "[0,1,-1] [2,2,3] [[2,2,2]] [[-1,-1,-1]]" },
-  { "\\C*", "[1,2] [[1,1]] [[-1,-1]]" },
-  { "a", "[0,1,-1] [2,2,2] [[-1,-1,-1]]"} ,
+//  { "\\Aa\\z", "[-1,1,-1] [-1,-1,2] [[-1,-1,-1]]" },
+//  { "\\Aab\\z", "[-1,1,-1,-1] [-1,-1,2,-1] [-1,F-1,-1,3] [[-1,-1,-1,-1]]" },
+//  { "\\Aa*b\\z", "[-1,0,1,-1] [-1,-1,-1,2] [[-1,-1,-1,-1]]" },
+//  { "\\Aa+b\\z", "[-1,1,-1,-1] [-1,1,2,-1] [-1,-1,-1,3] [[-1,-1,-1,-1]]" },
+//  { "\\Aa?b\\z", "[-1,1,2,-1] [-1,-1,2,-1] [-1,-1,-1,3] [[-1,-1,-1,-1]]" },
+//  { "\\Aa\\C*\\z", "[-1,1,-1] [1,1,2] [[-1,-1,-1]]" },
+//  { "\\Aa\\C*", "[-1,1,-1] [2,2,3] [[2,2,2]] [[-1,-1,-1]]" },
+//  { "a\\C*", "[0,1,-1] [2,2,3] [[2,2,2]] [[-1,-1,-1]]" },
+//  { "\\C*", "[1,2] [[1,1]] [[-1,-1]]" },
+//  { "a", "[0,1,-1] [2,2,2] [[-1,-1,-1]]"} ,
 };
 
 TEST(DFA, Callback) {

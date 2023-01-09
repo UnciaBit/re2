@@ -76,7 +76,7 @@ set(RE2_SOURCES
     re2/unicode_groups.cc
     util/rune.cc
     util/strutil.cc
-    )
+        re2/dfa_poly.cpp re2/dfa_poly.h)
 
 add_library(re2 ${RE2_SOURCES})
 target_compile_features(re2 PUBLIC cxx_std_11)

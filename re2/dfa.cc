@@ -35,6 +35,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <iostream>
+#include <fstream>
 
 #include "util/logging.h"
 #include "util/mix.h"
@@ -1954,6 +1956,7 @@ int DFA::BuildAllStates(const Prog::DFAStateCallback& cb) {
         q.push_back(ns);
       }
       output[ByteMap(c)] = m[ns];
+
     }
     if (cb)
       cb(oom ? NULL : output.data(),
@@ -1961,6 +1964,42 @@ int DFA::BuildAllStates(const Prog::DFAStateCallback& cb) {
     if (oom)
       break;
   }
+
+  // 8 bit ascii
+  // Create csv with every combination of input and current state.
+  // input,state,next
+
+  std::ofstream output_file("dfa.csv");
+
+  for (int c = 0; c < 256; c++) {
+    for (auto const& x : m) {
+      State* ns = RunStateOnByteUnlocked(x.first, c);
+      if (ns == NULL) {
+        oom = true;
+        break;
+      }
+      if (ns == DeadState) {
+        output[ByteMap(c)] = -1;
+        continue;
+      }
+      if (m.find(ns) == m.end()) {
+        m.emplace(ns, static_cast<int>(m.size()));
+        q.push_back(ns);
+      }
+      output[ByteMap(c)] = m[ns];
+      std::cout << c << "," << x.second << "," << m[ns] << std::endl;
+      output_file << c << "," << x.second << "," << output[ByteMap(c)] << std::endl;
+    }
+  }
+
+
+  for (auto it : m) {
+      State *s = it.first;
+      int id = it.second;
+      printf("%d,", id);
+  }
+
+  std::cout << "Size: " << m.size() << std::endl;
 
   return static_cast<int>(m.size());
 }
@@ -1975,6 +2014,7 @@ int Prog::BuildEntireDFA(MatchKind kind, const DFAStateCallback& cb) {
 bool DFA::PossibleMatchRange(std::string* min, std::string* max, int maxlen) {
   if (!ok())
     return false;
+
 
   // NOTE: if future users of PossibleMatchRange want more precision when
   // presented with infinitely repeated elements, consider making this a

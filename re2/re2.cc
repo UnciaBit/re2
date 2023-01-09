@@ -25,6 +25,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include "util/util.h"
 #include "util/logging.h"
@@ -1062,6 +1063,11 @@ bool RE2::Rewrite(std::string* out,
   }
   return true;
 }
+
+void RE2::TestDFA() {
+    std::cout << "Hello World";
+}
+
 
 /***** Parsers for various types *****/
 

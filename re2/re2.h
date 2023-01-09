@@ -601,6 +601,8 @@ class RE2 {
                const StringPiece* vec,
                int veclen) const;
 
+  static void TestDFA();
+
   // Constructor options
   class Options {
    public:
