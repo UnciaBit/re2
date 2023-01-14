@@ -13,14 +13,17 @@ class BilinearInterpolationPoly:
         assert len(x) == len(y) == len(z), "Coordinate arrays must be the same length"
 
         self.GF = GF
-        #
+
         self.x = GF(x)
         self.y = GF(y)
         self.z = GF(z)
-        #
-        self.num_x_elems = len(np.unique(x))  # Number of unique x values
-        self.num_y_elems = len(np.unique(y))  # Number of unique y values
-        #
+
+        self.x_elems = np.unique(x)  # Number of unique x values
+        self.y_elems = np.unique(y)  # Number of unique y values
+        assert len(self.x_elems) * len(self.y_elems) == len(
+            x
+        ), "(x, y) values must be unique and fully cover the domain"
+
         self.coefficients = self.interpolate_points(x, y, z)
 
     def interpolate_points(self, x: FieldArray, y: FieldArray, z: FieldArray):
@@ -63,8 +66,8 @@ class BilinearInterpolationPoly:
         """
         return [
             (x_pow, y_pow)
-            for x_pow in range(self.num_x_elems)
-            for y_pow in range(self.num_y_elems)
+            for x_pow in range(len(self.x_elems))
+            for y_pow in range(len(self.y_elems))
         ]
 
     def __str__(self):
@@ -86,16 +89,24 @@ class BilinearInterpolationPoly:
 
 
 if __name__ == "__main__":
-    P = 65521  # This prime is less than 2^16, so we can use uint16
+    # Create a Galois field (this is a finite field used to constrain the values of the polynomial)
+    P = 65521  # This prime is less than 2^16, so we can use uint16 (potential efficiency gain)
     GF = galois.GF(P)
 
-    x = GF([1, 2, 1, 2, 1, 2])
-    y = GF([1, 1, 2, 2, 3, 3])
-    z = GF([1, 2, 55, 4, 111, 12])
-    poly = BilinearInterpolationPoly(GF, x, y, z)
+    # Bilinear interpolation example for hypothetical state machine
+    input_token = GF([1, 2, 1, 2, 1, 2])
+    curr_state = GF([5, 5, 2, 2, 3, 3])
+    next_state = GF([1, 2, 55, 4, 111, 12])
 
-    for i in range(len(x)):
-        assert poly.evaluate(x[i], y[i]) == z[i], "Interpolation failed"
-        print(f"{poly.evaluate(x[i], y[i])} == {z[i]}")
+    # Generate the polynomial
+    poly = BilinearInterpolationPoly(GF, input_token, curr_state, next_state)
 
+    # Check that the polynomial correctly interpolates the given points
+    for i in range(len(next_state)):
+        assert (
+            poly.evaluate(input_token[i], curr_state[i]) == next_state[i]
+        ), "Interpolation failed"
+        print(f"{poly.evaluate(input_token[i], curr_state[i])} == {next_state[i]}")
+
+    # Print the polynomial in a readable format
     print(poly)
