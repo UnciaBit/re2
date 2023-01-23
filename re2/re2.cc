@@ -1064,8 +1064,50 @@ bool RE2::Rewrite(std::string* out,
   return true;
 }
 
-void RE2::TestDFA() {
-    std::cout << "Hello World";
+bool RE2::GeneratePolynomial(const std::string& regex) {
+
+    class Regexp* re = Regexp::Parse(regex, Regexp::LikePerl, nullptr);
+    if (re == nullptr) {
+        return false;
+    }
+    int64_t max_mem = int64_t{1}<<17;;
+    Prog* prog = re->CompileToProg(max_mem);
+//    prog->BuildEntireDFA(Prog::kFullMatch, nullptr);
+
+    // Get states list of vector (input, current state, next state)
+    std::vector<std::tuple<int, int, int>> states;
+    int nStates = prog->ExportDFA(Prog::kFullMatch, nullptr, states);
+
+    // Print states
+
+    std::cout << "States: " << std::endl;
+    for (auto& state : states) {
+        std::cout << std::get<0>(state) << " " << std::get<1>(state) << " " << std::get<2>(state) << std::endl;
+    }
+
+    std::cout << "Number of states: " << nStates << std::endl;
+
+
+//    for (int c = 0; c < 256; c++) {
+//        for (auto const& x : m) {
+//            State* ns = RunStateOnByteUnlocked(x.first, c);
+//            if (ns == NULL) {
+//                oom = true;
+//                break;
+//            }
+//            if (ns == DeadState) {
+//                output[ByteMap(c)] = -1;
+//                continue;
+//            }
+//            if (m.find(ns) == m.end()) {
+//                m.emplace(ns, static_cast<int>(m.size()));
+//                q.push_back(ns);
+//            }
+//            output[ByteMap(c)] = m[ns];
+//            std::cout << c << "," << x.second << "," << m[ns] << std::endl;
+//            output_file << c << "," << x.second << "," << output[ByteMap(c)] << std::endl;
+//        }
+//    }
 }
 
 

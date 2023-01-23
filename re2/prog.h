@@ -310,6 +310,7 @@ class Prog {
   // Returns the number of states built.
   // FOR TESTING OR EXPERIMENTAL PURPOSES ONLY.
   int BuildEntireDFA(MatchKind kind, const DFAStateCallback& cb);
+  int ExportDFA(MatchKind kind, const DFAStateCallback &cb, std::vector<std::tuple<int, int, int>> &states);
 
   // Compute bytemap.
   void ComputeByteMap();
@@ -449,6 +450,7 @@ class Prog {
 
   Prog(const Prog&) = delete;
   Prog& operator=(const Prog&) = delete;
+
 };
 
 // std::string_view in MSVC has iterators that aren't just pointers and

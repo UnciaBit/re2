@@ -5,7 +5,7 @@
 #include <iostream>
 #include "dfa_poly.h"
 
-int re2::DFA_POLY::DFA_TEST() {
-    std::cout << "Test" << std::endl;
-    return 0;
-}
+//int re2::DFA_POLY::DFA_TEST() {
+//    std::cout << "Test" << std::endl;
+//    return 0;
+//}

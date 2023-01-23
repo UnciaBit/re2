@@ -601,7 +601,7 @@ class RE2 {
                const StringPiece* vec,
                int veclen) const;
 
-  static void TestDFA();
+  static bool GeneratePolynomial(const std::string& regex);
 
   // Constructor options
   class Options {

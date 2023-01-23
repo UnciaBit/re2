@@ -112,6 +112,7 @@ TEST(SingleThreaded, BuildEntireDFA) {
       //dfamem = prog->dfa_mem();
       prog->BuildEntireDFA(Prog::kFirstMatch, nullptr);
       prog->BuildEntireDFA(Prog::kLongestMatch, nullptr);
+
       usage = m.HeapGrowth();
       delete prog;
     }

@@ -99,8 +99,10 @@ class DFA {
   // Returns the number of states built.
   // FOR TESTING OR EXPERIMENTAL PURPOSES ONLY.
   int BuildAllStates(const Prog::DFAStateCallback& cb);
+  int ExportStates(const Prog::DFAStateCallback &cb, std::vector<std::tuple<int, int, int>> &states);
 
-  // Computes min and max for matching strings.  Won't return strings
+
+    // Computes min and max for matching strings.  Won't return strings
   // bigger than maxlen.
   bool PossibleMatchRange(std::string* min, std::string* max, int maxlen);
 
@@ -348,6 +350,7 @@ class DFA {
 
   DFA(const DFA&) = delete;
   DFA& operator=(const DFA&) = delete;
+
 };
 
 // Shorthand for casting to uint8_t*.
@@ -1965,43 +1968,16 @@ int DFA::BuildAllStates(const Prog::DFAStateCallback& cb) {
       break;
   }
 
-  // 8 bit ascii
-  // Create csv with every combination of input and current state.
-  // input,state,next
 
-  std::ofstream output_file("dfa.csv");
-
-  for (int c = 0; c < 256; c++) {
-    for (auto const& x : m) {
-      State* ns = RunStateOnByteUnlocked(x.first, c);
-      if (ns == NULL) {
-        oom = true;
-        break;
-      }
-      if (ns == DeadState) {
-        output[ByteMap(c)] = -1;
-        continue;
-      }
-      if (m.find(ns) == m.end()) {
-        m.emplace(ns, static_cast<int>(m.size()));
-        q.push_back(ns);
-      }
-      output[ByteMap(c)] = m[ns];
-      std::cout << c << "," << x.second << "," << m[ns] << std::endl;
-      output_file << c << "," << x.second << "," << output[ByteMap(c)] << std::endl;
-    }
-  }
-
-
-  for (auto it : m) {
-      State *s = it.first;
-      int id = it.second;
-      printf("%d,", id);
-  }
-
-  std::cout << "Size: " << m.size() << std::endl;
-
-  return static_cast<int>(m.size());
+//  for (auto it : m) {
+//      State *s = it.first;
+//      int id = it.second;
+//      printf("%d,", id);
+//  }
+//
+//  std::cout << "Size: " << m.size() << std::endl;
+//
+//  return static_cast<int>(m.size());
 }
 
 // Build out all states in DFA for kind.  Returns number of states.
@@ -2009,11 +1985,16 @@ int Prog::BuildEntireDFA(MatchKind kind, const DFAStateCallback& cb) {
   return GetDFA(kind)->BuildAllStates(cb);
 }
 
+int Prog::ExportDFA(MatchKind kind, const DFAStateCallback& cb, std::vector<std::tuple<int, int, int>> &states) {
+  return GetDFA(kind)->ExportStates(cb, states);
+}
+
 // Computes min and max for matching string.
 // Won't return strings bigger than maxlen.
 bool DFA::PossibleMatchRange(std::string* min, std::string* max, int maxlen) {
   if (!ok())
     return false;
+
 
 
   // NOTE: if future users of PossibleMatchRange want more precision when
@@ -2146,6 +2127,81 @@ bool DFA::PossibleMatchRange(std::string* min, std::string* max, int maxlen) {
     return false;
 
   return true;
+}
+
+/***
+ * Export states into
+ * @param cb
+ * @return
+ */
+int DFA::ExportStates(const Prog::DFAStateCallback &cb, std::vector<std::tuple<int,int,int>> &states) {
+    if (!ok())
+        return 0;
+
+    // Pick out start state for unanchored search
+    // at beginning of text.
+    RWLocker l(&cache_mutex_);
+    SearchParams params(StringPiece(), StringPiece(), &l);
+    params.anchored = false;
+    if (!AnalyzeSearch(&params) ||
+        params.start == NULL ||
+        params.start == DeadState)
+        return 0;
+
+    // Add start state to work queue.
+    // Note that any State* that we handle here must point into the cache,
+    // so we can simply depend on pointer-as-a-number hashing and equality.
+    std::unordered_map<State*, int> m;
+    std::deque<State*> q;
+    m.emplace(params.start, static_cast<int>(m.size()));
+    q.push_back(params.start);
+
+    // Compute the input bytes needed to cover all of the next pointers.
+    int nnext = prog_->bytemap_range() + 1;  // + 1 for kByteEndText slot
+    std::vector<int> input(nnext);
+    for (int c = 0; c < 256; c++) {
+        int b = prog_->bytemap()[c];
+        while (c < 256-1 && prog_->bytemap()[c+1] == b)
+            c++;
+        input[b] = c;
+    }
+    input[prog_->bytemap_range()] = kByteEndText;
+
+    // Scratch space for the output.
+    std::vector<int> output(nnext);
+
+    // Flood to expand every state.
+    bool oom = false;
+    while (!q.empty()) {
+        State* s = q.front();
+        q.pop_front();
+        for (int c : input) {
+            State* ns = RunStateOnByteUnlocked(s, c);
+            if (ns == NULL) {
+                oom = true;
+                break;
+            }
+            if (ns == DeadState) {
+                output[ByteMap(c)] = -1;
+                continue;
+            }
+            if (m.find(ns) == m.end()) {
+                m.emplace(ns, static_cast<int>(m.size()));
+                q.push_back(ns);
+            }
+            output[ByteMap(c)] = m[ns];
+            // Print current state, input and next state
+//            std::cout << m[s] << " " << c << " " << m[ns] << std::endl;
+            states.emplace_back(m[s], c, m[ns]);
+        }
+        if (cb)
+            cb(oom ? NULL : output.data(),
+               s == FullMatchState || s->IsMatch());
+        if (oom)
+            break;
+    }
+
+    return m.size();
 }
 
 // PossibleMatchRange for a Prog.
