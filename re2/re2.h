@@ -601,7 +601,7 @@ class RE2 {
                const StringPiece* vec,
                int veclen) const;
 
-  static bool GeneratePolynomial(const std::string& regex);
+  static std::vector<std::tuple<int, int, int>> GenerateStateTable(const std::string& regex);
 
   // Constructor options
   class Options {

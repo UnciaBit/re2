@@ -1968,7 +1968,6 @@ int DFA::BuildAllStates(const Prog::DFAStateCallback& cb) {
     State* s = q.front();
     q.pop_front();
     for (int c : input) {
-        std::cout << "c: " << c << std::endl;
       State* ns = RunStateOnByteUnlocked(s, c);
       if (ns == NULL) {
         oom = true;
@@ -2201,8 +2200,6 @@ int DFA::ExportStates(const Prog::DFAStateCallback &cb, std::vector<std::tuple<i
 
         for (int c : input) {
 
-            std::cout << "c: " << c << std::endl;
-
             State* ns = RunStateOnByteUnlocked(s, c);
             if (ns == NULL) {
                 oom = true;
@@ -2217,8 +2214,6 @@ int DFA::ExportStates(const Prog::DFAStateCallback &cb, std::vector<std::tuple<i
                 q.push_back(ns);
             }
             output[ByteMap(c)] = m[ns];
-            states.emplace_back(m[s], c, m[ns]);
-//            std::cout << "State: " << m[s] << " Input: " << c << " Next: " << m[ns] << std::endl;
         }
 
         if (cb)
@@ -2246,7 +2241,7 @@ int DFA::ExportStates(const Prog::DFAStateCallback &cb, std::vector<std::tuple<i
 //                q.push_back(ns);
             }
 //            output[ByteMap(c)] = m[ns];
-//            states.emplace_back(m[x.first], c, m[ns]);
+            states.emplace_back(m[x.first], c, m[ns]);
         }
     }
 
