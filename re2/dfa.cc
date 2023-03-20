@@ -1945,6 +1945,7 @@ int DFA::BuildAllStates(const Prog::DFAStateCallback& cb) {
     State* s = q.front();
     q.pop_front();
     for (int c : input) {
+        std::cout << "c: " << c << std::endl;
       State* ns = RunStateOnByteUnlocked(s, c);
       if (ns == NULL) {
         oom = true;
@@ -1959,7 +1960,6 @@ int DFA::BuildAllStates(const Prog::DFAStateCallback& cb) {
         q.push_back(ns);
       }
       output[ByteMap(c)] = m[ns];
-
     }
     if (cb)
       cb(oom ? NULL : output.data(),
@@ -2175,7 +2175,11 @@ int DFA::ExportStates(const Prog::DFAStateCallback &cb, std::vector<std::tuple<i
     while (!q.empty()) {
         State* s = q.front();
         q.pop_front();
+
         for (int c : input) {
+
+            std::cout << "c: " << c << std::endl;
+
             State* ns = RunStateOnByteUnlocked(s, c);
             if (ns == NULL) {
                 oom = true;
@@ -2190,15 +2194,37 @@ int DFA::ExportStates(const Prog::DFAStateCallback &cb, std::vector<std::tuple<i
                 q.push_back(ns);
             }
             output[ByteMap(c)] = m[ns];
-            // Print current state, input and next state
-//            std::cout << m[s] << " " << c << " " << m[ns] << std::endl;
             states.emplace_back(m[s], c, m[ns]);
+//            std::cout << "State: " << m[s] << " Input: " << c << " Next: " << m[ns] << std::endl;
         }
+
         if (cb)
             cb(oom ? NULL : output.data(),
                s == FullMatchState || s->IsMatch());
         if (oom)
             break;
+    }
+
+    // Get all combinations of state, input and next state
+
+    for (int c = 0; c < 256; c++) {
+        for (auto const& x : m) { // For each state in the map
+            State* ns = RunStateOnByteUnlocked(x.first, c); // Get the next state
+            if (ns == NULL) {
+                oom = true;
+                break;
+            }
+            if (ns == DeadState) {
+//                output[ByteMap(c)] = -1;
+                continue;
+            }
+            if (m.find(ns) == m.end()) {
+//                m.emplace(ns, static_cast<int>(m.size()));
+//                q.push_back(ns);
+            }
+//            output[ByteMap(c)] = m[ns];
+//            states.emplace_back(m[x.first], c, m[ns]);
+        }
     }
 
     return m.size();

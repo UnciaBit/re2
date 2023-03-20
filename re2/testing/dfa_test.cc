@@ -94,10 +94,10 @@ static void DoBuild(Prog* prog) {
 TEST(SingleThreaded, BuildEntireDFA) {
   // Create regexp with 2^30 states in DFA.
 //  Regexp* re = Regexp::Parse("a[ab]{30}b", Regexp::LikePerl, NULL);
-//  Regexp* re = Regexp::Parse("a", Regexp::LikePerl, NULL);
+  Regexp* re = Regexp::Parse("a", Regexp::LikePerl, NULL);
 //  Regexp* re = Regexp::Parse("a[ab]b", Regexp::LikePerl, NULL);
 //  Regexp* re = Regexp::Parse("google.com\\/((maps)|(images))", Regexp::LikePerl, NULL);
-  Regexp* re = Regexp::Parse(R"([(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*))", Regexp::LikePerl, NULL);
+//  Regexp* re = Regexp::Parse(R"([(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*))", Regexp::LikePerl, NULL);
   ASSERT_TRUE(re != NULL);
 
   for (int i = 17; i < 24; i++) {
